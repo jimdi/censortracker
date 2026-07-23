@@ -101,7 +101,7 @@ export const handleIgnoredHostsChange = async (
   if ('newValue' in ignoredHosts) {
     ProxyManager.isEnabled().then((enabled) => {
       if (enabled) {
-        ProxyManager.setProxy().then((proxySet) => {
+        ProxyManager.setProxy().then(() => {
         })
       }
     })
@@ -226,32 +226,29 @@ export const handleTabState = async (
   { url } = {},
 ) => {
   if (url && status === browser.tabs.TabStatus.LOADING) {
-    Settings.extensionEnabled().then((enabled) => {
-      if (enabled) {
-        Ignore.contains(url).then(async (isIgnored) => {
-          Registry.retrieveDisseminator(url).then(
-            async ({ url: disseminatorUrl, cooperationRefused }) => {
-              if (disseminatorUrl) {
-                if (!cooperationRefused) {
-                  Settings.setDangerIcon(tabId)
-                  await showDisseminatorWarning(url)
-                }
-              }
-            },
-          )
+    const enabled = await Settings.extensionEnabled()
 
-          if (!isIgnored) {
-            Registry.contains(url).then((blocked) => {
-              if (blocked) {
-                Settings.setBlockedIcon(tabId)
-              }
-            })
-          }
-        })
-      } else {
-        Settings.setDisableIcon(tabId)
+    if (enabled) {
+      const isIgnored = await Ignore.contains(url)
+
+      const { url: disseminatorUrl, cooperationRefused } =
+        await Registry.retrieveDisseminator(url)
+
+      if (disseminatorUrl && !cooperationRefused) {
+        Settings.setDangerIcon(tabId)
+        await showDisseminatorWarning(url)
       }
-    })
+
+      if (!isIgnored) {
+        const blocked = await Registry.contains(url)
+
+        if (blocked) {
+          Settings.setBlockedIcon(tabId)
+        }
+      }
+    } else {
+      Settings.setDisableIcon(tabId)
+    }
   }
 }
 
@@ -314,7 +311,7 @@ export const handleProxyError = async ({ error }) => {
       browser.tabs.query({
         active: true,
         lastFocusedWindow: true,
-      }).then(async (tab) => {
+      }).then(async () => {
         console.warn('Requesting new proxy server...')
         await server.synchronize({
           syncIgnore: false,

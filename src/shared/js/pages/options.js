@@ -1,12 +1,8 @@
 import browser from 'Background/browser-api'
 import ProxyManager from 'Background/proxy'
 import Registry from 'Background/registry'
-import * as server from 'Background/server'
 
 (async () => {
-  // For debugging purposes.
-  window.server = server
-
   const proxyingEnabled = await ProxyManager.isEnabled()
   const version = document.getElementById('version')
   const proxyStatus = document.getElementById('proxyStatus')
@@ -39,7 +35,7 @@ import * as server from 'Background/server'
     updateAvailable: false,
     backendIsIntermittent: false,
     botDetection: false,
-  }).then(({ updateAvailable, backendIsIntermittent, botDetection }) => {
+  }).then(({ updateAvailable, backendIsIntermittent }) => {
     if (updateAvailable) {
       updateAvailableAlert.classList.remove('hidden')
     }
@@ -49,7 +45,7 @@ import * as server from 'Background/server'
     }
   })
 
-  updateExtensionButton.addEventListener('click', async (event) => {
+  updateExtensionButton.addEventListener('click', async () => {
     browser.storage.local.set({ updateAvailable: false })
       .then(() => {
         browser.runtime.reload()
@@ -58,11 +54,11 @@ import * as server from 'Background/server'
 
   Registry.isEmpty().then((isEmpty) => {
     if (isEmpty) {
-      optionsRegistryUpdateDatabaseButton.addEventListener('click', (event) => {
+      optionsRegistryUpdateDatabaseButton.addEventListener('click', () => {
         window.location.href = 'advanced-options.html'
       })
 
-      optionsRegistryProxyingListButton.addEventListener('click', (event) => {
+      optionsRegistryProxyingListButton.addEventListener('click', () => {
         window.location.href = 'proxy-list.html'
       })
       optionsRegistryIsEmptyWarning.classList.remove('hidden')

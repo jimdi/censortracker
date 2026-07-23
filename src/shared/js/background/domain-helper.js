@@ -58,14 +58,22 @@ const pageCollector = () => {
  */
 const executeCollector = async (tabId) => {
   // Chromium (MV3) — chrome.scripting with a function reference.
-  if (!browser.isFirefox && browser.scripting && browser.scripting.executeScript) {
+  if (
+    !browser.isFirefox &&
+    browser.scripting &&
+    browser.scripting.executeScript
+  ) {
     try {
       const results = await browser.scripting.executeScript({
         target: { tabId },
         func: pageCollector,
       })
 
-      if (Array.isArray(results) && results[0] && Array.isArray(results[0].result)) {
+      if (
+        Array.isArray(results) &&
+        results[0] &&
+        Array.isArray(results[0].result)
+      ) {
         return results[0].result
       }
     } catch (error) {

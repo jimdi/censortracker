@@ -1,3 +1,5 @@
+import { getDomain } from 'tldts'
+
 import browser from './browser-api'
 import { fetchWithTimeout, removeDuplicates } from './utilities'
 
@@ -46,61 +48,97 @@ const fetchConfig = async () => {
     currentRegionCode: '',
   })
 
-  for (const { endpointName, endpointUrl } of getConfigAPIEndpoints()) {
+  const endpoints = getConfigAPIEndpoints()
+
+  const tryEndpoint = async ({ endpointName, endpointUrl }) => {
     try {
-      const response = await fetchWithTimeout(endpointUrl, { timeout: 8000 })
-
-      if (response.ok) {
-        const { meta = {}, data = [] } = await response.json()
-
-        if (!Array.isArray(data) || data.length === 0) {
-          console.warn(`[Config] Skipping ${endpointName}...`)
-          continue
-        }
-
-        let countryCode = FALLBACK_COUNTRY_CODE
-
-        if (currentRegionCode) {
-          countryCode = currentRegionCode
-        } else if (meta.geoIPServiceURL) {
-          countryCode = await inquireCountryCode(meta.geoIPServiceURL)
-        }
-
-        let config = data.find((cfg) => {
-          return cfg.countryCode === countryCode
-        })
-
-        if (!config) {
-          // The selected country isn't supported by this config: fall back to
-          // the first available entry instead of crashing on `undefined`.
-          await browser.storage.local.set({ unsupportedCountry: true })
-          config = data[0]
-        } else {
-          await browser.storage.local.set({ unsupportedCountry: false })
-        }
-
-        if (!config) {
-          continue
-        }
-
-        // For debugging purposes
-        config.configEndpointUrl = endpointUrl
-        config.configEndpointSource = endpointName
-
-        await browser.storage.local.set({
-          localConfig: config,
-          backendIsIntermittent: false,
-        })
-
-        return config
-      }
-      console.error(
-        `[Config] Error on fetching config from: ${endpointName}`,
+      const response = await fetchWithTimeout(
+        endpointUrl, { timeout: 8000 },
       )
+
+      if (!response.ok) {
+        console.error(
+          `[Config] Error on fetching config from: ${endpointName}`,
+        )
+        return null
+      }
+
+      const rawData = await response.json()
+
+      if (
+        !rawData ||
+        typeof rawData !== 'object' ||
+        !Array.isArray(rawData.data)
+      ) {
+        console.warn(
+          `[Config] Invalid config shape from ${endpointName}`,
+        )
+        return null
+      }
+
+      const { meta = {}, data } = rawData
+
+      if (data.length === 0) {
+        console.warn(`[Config] Skipping ${endpointName}...`)
+        return null
+      }
+
+      let countryCode = FALLBACK_COUNTRY_CODE
+
+      if (currentRegionCode) {
+        countryCode = currentRegionCode
+      } else if (meta.geoIPServiceURL) {
+        countryCode = await inquireCountryCode(
+          meta.geoIPServiceURL,
+        )
+      }
+
+      let config = data.find(
+        (cfg) => cfg.countryCode === countryCode,
+      )
+
+      if (!config) {
+        await browser.storage.local.set({
+          unsupportedCountry: true,
+        })
+        config = data[0]
+      } else {
+        await browser.storage.local.set({
+          unsupportedCountry: false,
+        })
+      }
+
+      if (!config) {
+        return null
+      }
+
+      config.configEndpointUrl = endpointUrl
+      config.configEndpointSource = endpointName
+
+      return config
     } catch (error) {
-      console.error(`[Config] Failed to fetch config from ${endpointName}: ${error}`)
+      console.error(
+        '[Config] Failed to fetch config from ' +
+        `${endpointName}: ${error}`,
+      )
+      return null
     }
   }
+
+  const results = await Promise.allSettled(
+    endpoints.map(tryEndpoint),
+  )
+
+  for (const result of results) {
+    if (result.status === 'fulfilled' && result.value) {
+      await browser.storage.local.set({
+        localConfig: result.value,
+        backendIsIntermittent: false,
+      })
+      return result.value
+    }
+  }
+
   return {}
 }
 
@@ -134,13 +172,24 @@ const fetchProxy = async ({ proxyUrl } = {}) => {
     }
 
     const response = await fetchWithTimeout(proxyUrl, { timeout: 8000 })
+    const rawData = await response.json()
+
+    if (
+      !rawData ||
+      typeof rawData.server !== 'string' ||
+      typeof rawData.port !== 'number'
+    ) {
+      console.error('[Proxy] Invalid proxy config shape')
+      return
+    }
+
     const {
       server,
       port,
       pingHost,
       pingPort,
       fallbackReason,
-    } = await response.json()
+    } = rawData
 
     const fallbackProxyInUse = !!fallbackReason
 
@@ -258,7 +307,10 @@ const fetchRegistry = async ({ registryUrl, specifics = {} } = {}) => {
 
   // Fetch the blocklist itself, tolerating multiple response formats.
   try {
-    const response = await fetchWithTimeout(effectiveRegistryUrl, { timeout: 15000 })
+    const response = await fetchWithTimeout(
+      effectiveRegistryUrl,
+      { timeout: 15000 },
+    )
     const text = await response.text()
     const domains = removeDuplicates(parseRegistryData(text))
 
@@ -276,9 +328,10 @@ const fetchRegistry = async ({ registryUrl, specifics = {} } = {}) => {
   // Disseminators (ORI) list is country-specific and always JSON.
   if ('cooperationRefusedORIUrl' in specifics) {
     try {
-      const response = await fetchWithTimeout(specifics.cooperationRefusedORIUrl, {
-        timeout: 15000,
-      })
+      const response = await fetchWithTimeout(
+        specifics.cooperationRefusedORIUrl,
+        { timeout: 15000 },
+      )
       const data = await response.json()
 
       await browser.storage.local.set({ disseminators: data })
@@ -302,10 +355,19 @@ const fetchIgnore = async ({ ignoreUrl } = {}) => {
   fetchWithTimeout(ignoreUrl, { timeout: 8000 })
     .then((response) => response.json())
     .then((domains) => {
+      if (!Array.isArray(domains)) {
+        console.warn('[Ignore] Response is not an array, skipping.')
+        return
+      }
+
       browser.storage.local.get({ ignoredHosts: [] })
         .then(({ ignoredHosts }) => {
           for (const domain of domains) {
-            if (!ignoredHosts.includes(domain)) {
+            if (typeof domain !== 'string' || !domain) {
+              continue
+            }
+
+            if (getDomain(domain) && !ignoredHosts.includes(domain)) {
               ignoredHosts.push(domain)
             }
           }
@@ -346,8 +408,19 @@ export const synchronize = async ({
       syncTasks.push(fetchProxy({ proxyUrl }))
     }
 
+    const { useCustomRegistry, customRegistryUrl } =
+      await browser.storage.local.get({
+        useCustomRegistry: false,
+        customRegistryUrl: '',
+      })
+
     if (syncRegistry) {
-      syncTasks.push(fetchRegistry({ registryUrl, specifics }))
+      syncTasks.push(fetchRegistry({
+        registryUrl: useCustomRegistry && customRegistryUrl
+          ? ''
+          : registryUrl,
+        specifics,
+      }))
     }
 
     await Promise.all(syncTasks)
@@ -356,13 +429,7 @@ export const synchronize = async ({
 
     // Even when the remote config is unreachable, honor a user-supplied
     // registry mirror so the blocklist can still be refreshed.
-    const { useCustomRegistry, customRegistryUrl } =
-      await browser.storage.local.get({
-        useCustomRegistry: false,
-        customRegistryUrl: '',
-      })
-
-    if (syncRegistry && useCustomRegistry && customRegistryUrl) {
+    if (syncRegistry) {
       await fetchRegistry()
     }
   }

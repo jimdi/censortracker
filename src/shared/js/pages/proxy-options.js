@@ -18,6 +18,14 @@ import {
   parseProxyString,
 } from 'Background/utilities'
 
+const setHTML = (el, html) => {
+  const doc = new DOMParser().parseFromString(
+    html, 'text/html',
+  )
+
+  el.replaceChildren(...doc.body.childNodes)
+}
+
 (async () => {
   const proxyingEnabled = await ProxyManager.isEnabled()
   const loading = document.getElementById('loading')
@@ -73,6 +81,7 @@ import {
   const removeUntestedProxiesButton = document.getElementById('removeUntestedProxiesButton')
   const removeUncheckedProxiesButton = document.getElementById('removeUncheckedProxiesButton')
   const removeAllProxiesButton = document.getElementById('removeAllProxiesButton')
+  const removeDuplicateProxiesButton = document.getElementById('removeDuplicateProxiesButton')
   const proxyListToggle = document.getElementById('proxyListToggle')
   const proxyListBody = document.getElementById('proxyListBody')
   const proxyCount = document.getElementById('proxyCount')
@@ -179,8 +188,8 @@ import {
       }
     }
 
-    if (changeLocalProxyRadio.innerHTML) {
-      changeLocalProxyRadio.innerHTML = ''
+    if (changeLocalProxyRadio.textContent) {
+      changeLocalProxyRadio.textContent = ''
     }
 
     loading.style.display = 'flex'
@@ -196,17 +205,40 @@ import {
       }
       div.id = `proxyconf-${id}`
       div.className = 'proxy-list__block'
-      div.innerHTML = `
-       <div class="radio-button proxy-list__block-item">
-        <input class="radio-button-input" type="radio" name="local-proxy" id="${id}" value="${id}"
-          ${isActive ? 'checked' : ''} data-config-name="${name}"/>
-        <label class="radio-button-label" for="${id}">${name}</label>
-        <div class="proxy-list__block-item__btn delete-config" data-id="${id}">
-          <svg class="close-icon" width="24" height="24" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 10L34 34M34 10L10 34" stroke="currentColor" stroke-opacity="0.8" stroke-width="2"/>
-          </svg>
-        </div>
-       </div>`
+      const block = document.createElement('div')
+
+      block.className =
+        'radio-button proxy-list__block-item'
+      const input = document.createElement('input')
+
+      input.className = 'radio-button-input'
+      input.type = 'radio'
+      input.name = 'local-proxy'
+      input.id = id
+      input.value = id
+      input.checked = isActive
+      input.dataset.configName = name
+      const label = document.createElement('label')
+
+      label.className = 'radio-button-label'
+      label.htmlFor = id
+      label.textContent = name
+      const delBtn = document.createElement('div')
+
+      delBtn.className =
+        'proxy-list__block-item__btn delete-config'
+      delBtn.dataset.id = id
+      setHTML(delBtn,
+        '<svg class="close-icon" width="24" height="24"' +
+        ' viewBox="0 0 44 44"' +
+        ' xmlns="http://www.w3.org/2000/svg">' +
+        '<path d="M10 10L34 34M34 10L10 34"' +
+        ' stroke="currentColor" stroke-opacity="0.8"' +
+        ' stroke-width="2"/>' +
+        '</svg>',
+      )
+      block.append(input, label, delBtn)
+      div.append(block)
       changeLocalProxyRadio.append(div)
     }
     loading.style.display = 'none'
@@ -319,6 +351,9 @@ import {
     if (status.alive) {
       return `<span class="cproxy-status cproxy-status--alive">${escapeHtml(i18nGetMessage('proxyStatusAlive'))}</span>`
     }
+    if (status.needsAuth) {
+      return `<span class="cproxy-status cproxy-status--needsauth">${escapeHtml(i18nGetMessage('proxyStatusNeedsAuth'))}</span>`
+    }
     return `<span class="cproxy-status cproxy-status--dead">${escapeHtml(i18nGetMessage('proxyStatusDead'))}</span>`
   }
 
@@ -363,25 +398,30 @@ import {
   }
 
   // Header row of the proxy datagrid: one labelled column per parameter.
+  // Each column (except checkbox and actions) is clickable for sorting.
   const renderGridHeader = () => {
-    const col = (key, titleKey) => {
+    const col = (key, sortKey, titleKey) => {
       const title = titleKey
         ? ` title="${escapeHtml(i18nGetMessage(titleKey))}"`
         : ''
+      const dataSort = sortKey ? ` data-sort="${sortKey}"` : ''
 
-      return `<span${title}>${escapeHtml(i18nGetMessage(key))}</span>`
+      return `<span${dataSort}${title} class="cproxy-col-header" style="cursor:pointer">${escapeHtml(i18nGetMessage(key))}</span>`
     }
 
     return `
-     <div class="cproxy-row cproxy-grid__header" aria-hidden="true">
-       <span></span>
-       ${col('proxyColName')}
-       ${col('proxyColAddress')}
-       ${col('proxyColCountry', 'proxyColCountryTitle')}
-       ${col('proxyColExit', 'proxyColExitTitle')}
-       ${col('proxyColPing', 'proxyColPingTitle')}
-       ${col('proxyColSite', 'proxyColSiteTitle')}
-       ${col('proxyColStatus')}
+     <div class="cproxy-row cproxy-grid__header">
+       <label class="cproxy-select-all-cell">
+         <input type="checkbox" id="selectAllProxies"/>
+       </label>
+       ${col('proxyColId', 'order')}
+       ${col('proxyColName', 'name')}
+       ${col('proxyColAddress', 'address')}
+       ${col('proxyColCountry', 'country', 'proxyColCountryTitle')}
+       ${col('proxyColExit', 'exit', 'proxyColExitTitle')}
+       ${col('proxyColPing', 'ping', 'proxyColPingTitle')}
+       ${col('proxyColSite', 'site', 'proxyColSiteTitle')}
+       ${col('proxyColStatus', 'status')}
        <span></span>
      </div>`
   }
@@ -421,8 +461,8 @@ import {
      <div class="cproxy-row${inChain ? ' cproxy-row--active' : ''}" data-id="${id}">
        <label class="cproxy-row__main">
          <input type="checkbox" name="chain-proxy" value="${id}" ${inChain ? 'checked' : ''}/>
-         ${order}
        </label>
+       <span class="cproxy-order-cell">${order}</span>
        <span class="cproxy-row__name" title="${escapeHtml(name)}">${escapeHtml(name)}${badge}</span>
        <span class="cproxy-row__addr">${escapeHtml(protocol)} ${escapeHtml(uri)}</span>
        <span class="cproxy-country-cell">${countryBadgeHtml(uri, geo)}</span>
@@ -441,9 +481,9 @@ import {
          <button type="button" class="cproxy-icon-btn cproxy-test"
                  data-id="${id}" title="${escapeHtml(i18nGetMessage('testProxyButton'))}">
            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-             <path d="M20 12a8 8 0 1 1-2.34-5.66" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-             <path d="M20 4v4h-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-           </svg>
+              <path d="M20 12a8 8 0 1 1-2.34-5.66" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M20 4v4h-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
          </button>
          <button type="button" class="cproxy-icon-btn cproxy-edit"
                  data-id="${id}" data-builtin="${builtin}" title="${escapeHtml(editTitle)}">
@@ -486,13 +526,30 @@ import {
       html += renderProxyRow(proxy, chain, statuses, geo)
     }
 
-    customProxyList.innerHTML = html ? renderGridHeader() + html : ''
+    setHTML(
+      customProxyList,
+      html ? renderGridHeader() + html : '',
+    )
     if (proxyCount) {
       proxyCount.textContent = proxies.length > 0
         ? `${proxies.length} ${i18nGetMessage('proxiesCountSuffix')}`
         : ''
     }
     await refreshCurrentProxyAddress()
+    attachSortHandlers()
+
+    // Sync the select-all checkbox: checked when all proxies are in the chain,
+    // indeterminate when some but not all, unchecked otherwise.
+    const selectAllCb = customProxyList.querySelector('#selectAllProxies')
+
+    if (selectAllCb) {
+      const allCbs = customProxyList.querySelectorAll('input[name="chain-proxy"]')
+      const allChecked = allCbs.length > 0 && Array.from(allCbs).every((cb) => cb.checked)
+      const someChecked = Array.from(allCbs).some((cb) => cb.checked)
+
+      selectAllCb.checked = allChecked
+      selectAllCb.indeterminate = someChecked && !allChecked
+    }
 
     // Fill in any missing country flags in the background (cached, never blocks
     // the render, re-renders itself when done).
@@ -535,6 +592,117 @@ import {
     }
   }
 
+  // ── Column-header sorting ─────────────────────────────────────────────────
+
+  let currentSortKey = 'latency'
+  let currentSortDir = 'asc'
+
+  const attachSortHandlers = () => {
+    const headers = customProxyList
+      ? customProxyList.querySelectorAll('.cproxy-col-header')
+      : []
+
+    for (const header of headers) {
+      header.onclick = null
+      header.onclick = onSortClick
+    }
+  }
+
+  const onSortClick = (event) => {
+    const key = event.currentTarget.dataset.sort
+
+    if (!key) {
+      return
+    }
+    if (currentSortKey === key) {
+      currentSortDir = currentSortDir === 'asc' ? 'desc' : 'asc'
+    } else {
+      currentSortKey = key
+      currentSortDir = 'asc'
+    }
+    sortAndRenderProxies()
+  }
+
+  const sortAndRenderProxies = async () => {
+    const proxies = await ProxyManager.getCustomProxies()
+    const statuses = await ProxyManager.getProxyStatuses()
+    const chain = await ProxyManager.getProxyChain()
+
+    proxies.sort((a, b) => {
+      const aStatus = statuses[a.id]
+      const bStatus = statuses[b.id]
+      let aVal
+      let bVal
+
+      switch (currentSortKey) {
+        case 'order':
+          aVal = chain.indexOf(a.id)
+          bVal = chain.indexOf(b.id)
+          // Proxies not in the chain sort to the end
+          if (aVal === -1) {
+            aVal = Number.MAX_SAFE_INTEGER
+          }
+          if (bVal === -1) {
+            bVal = Number.MAX_SAFE_INTEGER
+          }
+          break
+        case 'name':
+          aVal = (a.name || '').toLowerCase()
+          bVal = (b.name || '').toLowerCase()
+          break
+        case 'address':
+          aVal = (a.uri || '').toLowerCase()
+          bVal = (b.uri || '').toLowerCase()
+          break
+        case 'country':
+          aVal = aStatus?.exitCountry || ''
+          bVal = bStatus?.exitCountry || ''
+          break
+        case 'exit':
+          aVal = aStatus?.exitCountry || ''
+          bVal = bStatus?.exitCountry || ''
+          break
+        case 'ping':
+          aVal = aStatus?.ping ?? Number.MAX_SAFE_INTEGER
+          bVal = bStatus?.ping ?? Number.MAX_SAFE_INTEGER
+          break
+        case 'status':
+          aVal = computeSortRank(aStatus)
+          bVal = computeSortRank(bStatus)
+          break
+        default:
+          // 'latency' / 'site' — sort by latency, alive first
+          aVal = aStatus?.alive
+            ? (aStatus.latency ?? Number.MAX_SAFE_INTEGER - 1)
+            : Number.MAX_SAFE_INTEGER
+          bVal = bStatus?.alive
+            ? (bStatus.latency ?? Number.MAX_SAFE_INTEGER - 1)
+            : Number.MAX_SAFE_INTEGER
+      }
+
+      if (aVal < bVal) {
+        return currentSortDir === 'asc' ? -1 : 1
+      }
+      if (aVal > bVal) {
+        return currentSortDir === 'asc' ? 1 : -1
+      }
+      return 0
+    })
+
+    await browser.storage.local.set({ customProxies: proxies })
+    await renderCustomProxies()
+  }
+
+  const computeSortRank = (status) => {
+    if (!status) {
+      return 2
+    }
+    if (status.alive) {
+      return 0
+    }
+    return 1
+  }
+
   // Shows the address of the proxy that is effectively in use right now.
   async function refreshCurrentProxyAddress () {
     if (!currentProxyAddress) {
@@ -559,7 +727,10 @@ import {
       return
     }
 
-    const { proxyServerProtocol, proxyServerURI } = await ProxyManager.getProxyingRules()
+    const {
+      proxyServerProtocol,
+      proxyServerURI,
+    } = await ProxyManager.getProxyingRules()
 
     if (proxyServerURI) {
       currentProxyAddressValue.textContent = `${proxyServerProtocol} ${proxyServerURI}`
@@ -588,7 +759,14 @@ import {
 
   // Loads a proxy into the form. Built-in proxies are loaded as a *copy*
   // (editingProxyId stays null) so saving creates a new editable entry.
-  const loadProxyIntoForm = ({ id, name, protocol, uri, credentials, builtin }) => {
+  const loadProxyIntoForm = ({
+    id,
+    name,
+    protocol,
+    uri,
+    credentials,
+    builtin,
+  }) => {
     editingProxyId = builtin ? null : id
     if (proxyNameInput) {
       proxyNameInput.value = builtin ? i18nGetMessage('builtinProxyName') : name
@@ -644,8 +822,23 @@ import {
     const cell = rowStatusCell(id)
 
     if (cell) {
-      cell.innerHTML =
-        `<span class="cproxy-status cproxy-status--checking">${i18nGetMessage('proxyStatusChecking')}</span>`
+      setHTML(cell,
+        `<span class="cproxy-status cproxy-status--checking">${
+          i18nGetMessage('proxyStatusChecking')
+        }</span>`,
+      )
+    }
+  }
+
+  const setRowQueued = (id) => {
+    const cell = rowStatusCell(id)
+
+    if (cell) {
+      setHTML(cell,
+        `<span class="cproxy-status cproxy-status--queued">${
+          i18nGetMessage('proxyStatusQueued')
+        }</span>`,
+      )
     }
   }
 
@@ -657,20 +850,24 @@ import {
     if (!statusCell) {
       return
     }
-    statusCell.innerHTML = statusBadgeHtml(status)
+    setHTML(statusCell, statusBadgeHtml(status))
 
     const pingCell = rowCell(id, 'cproxy-ping-cell')
     const siteCell = rowCell(id, 'cproxy-site-cell')
     const exitCell = rowCell(id, 'cproxy-exit-cell')
 
     if (pingCell) {
-      pingCell.innerHTML = msCellHtml(status.ping)
+      setHTML(pingCell, msCellHtml(status.ping))
     }
     if (siteCell) {
-      siteCell.innerHTML = msCellHtml(status.alive ? status.latency : null)
+      setHTML(siteCell,
+        msCellHtml(
+          status.alive ? status.latency : null,
+        ),
+      )
     }
     if (exitCell) {
-      exitCell.innerHTML = exitCellHtml(status)
+      setHTML(exitCell, exitCellHtml(status))
     }
   }
 
@@ -700,7 +897,7 @@ import {
         document.execCommand('copy')
         textarea.remove()
         return true
-      } catch (fallbackError) {
+      } catch (_fallbackError) {
         return false
       }
     }
@@ -709,13 +906,29 @@ import {
   // Toggle a proxy's membership in the chain (built-in or user). Marked
   // proxies are tried one after another, in the order they were marked.
   customProxyList.addEventListener('change', async (event) => {
-    if (event.target.name !== 'chain-proxy') {
+    if (event.target.name !== 'chain-proxy' && event.target.id !== 'selectAllProxies') {
       return
     }
 
     // Changing the chain mid-check would clobber the temporary checker PAC.
     if (checkController) {
       event.target.checked = !event.target.checked
+      return
+    }
+
+    // Select-all: check or uncheck every chain-proxy checkbox, then update chain.
+    if (event.target.id === 'selectAllProxies') {
+      const checked = event.target.checked
+      const checkboxes = customProxyList.querySelectorAll('input[name="chain-proxy"]')
+      const chain = await ProxyManager.getProxyChain()
+      const ids = Array.from(checkboxes).map((cb) => cb.value)
+      const nextChain = checked
+        ? [...new Set([...chain, ...ids])]
+        : chain.filter((id) => !ids.includes(id))
+
+      await ProxyManager.setProxyChain(nextChain)
+      await ProxyManager.setProxy()
+      await renderCustomProxies()
       return
     }
 
@@ -862,7 +1075,7 @@ import {
       }
 
       for (const proxy of list) {
-        setRowChecking(proxy.id)
+        setRowQueued(proxy.id)
       }
 
       const total = list.length
@@ -879,6 +1092,11 @@ import {
         // removal happens once, after the run, via removeDeadCustomProxies().
         await ProxyManager.testProxies(list, {
           signal: checkController.signal,
+          onBatchStart: (ids) => {
+            for (const id of ids) {
+              setRowChecking(id)
+            }
+          },
           onResult: (id, status) => {
             done += 1
             if (status.alive) {
@@ -916,6 +1134,7 @@ import {
           await ProxyManager.removeDeadCustomProxies()
         }
         await ProxyManager.restoreProxy()
+        await ProxyManager.sortProxiesByLatency()
         await renderCustomProxies()
       }
     })
@@ -964,6 +1183,11 @@ import {
   setupBulkRemoveButton(
     removeUntestedProxiesButton,
     () => ProxyManager.removeUntestedCustomProxies(),
+  )
+  // Remove duplicates keeping the first occurrence of each protocol+uri.
+  setupBulkRemoveButton(
+    removeDuplicateProxiesButton,
+    () => ProxyManager.removeDuplicateCustomProxies(),
   )
   // Remove every proxy that is not ticked into the chain.
   setupBulkRemoveButton(
@@ -1018,8 +1242,9 @@ import {
     } finally {
       proxyTestingInProgress = false
     }
-    const aliveCount =
-      added.filter((proxy) => results[proxy.id] && results[proxy.id].alive).length
+    const aliveCount = added.filter(
+      (proxy) => results[proxy.id] && results[proxy.id].alive,
+    ).length
     let removedCount = 0
 
     if (await ProxyManager.getAutoDeleteDeadProxies()) {
@@ -1031,6 +1256,7 @@ import {
       }
       if (removedCount > 0) {
         await ProxyManager.setProxy()
+        await ProxyManager.sortProxiesByLatency()
         await renderCustomProxies()
       }
     }
@@ -1161,10 +1387,38 @@ import {
     }
 
     const persistSources = async () => {
+      const wasEnabled = proxySourcesEnabledCheckbox.checked
+
       await ProxyManager.setProxySourcesSettings({
         ...readSourcesControls(),
-        enabled: proxySourcesEnabledCheckbox.checked,
+        enabled: wasEnabled,
       })
+
+      // When the user toggles auto-fetch ON, run an immediate fetch so
+      // they don't have to wait the full interval for the first batch.
+      if (wasEnabled) {
+        proxyTestingInProgress = true
+        if (proxySourcesStatus) {
+          proxySourcesStatus.textContent = i18nGetMessage('proxySourcesFetching')
+        }
+        try {
+          const { added, alive, removed } =
+            await ProxyManager.fetchProxySources({ force: true })
+
+          await renderCustomProxies()
+          if (proxySourcesStatus) {
+            proxySourcesStatus.textContent =
+              `${i18nGetMessage('proxiesImportedLabel')}: +${added}  ✓${alive}  ✗${removed}`
+          }
+        } catch (error) {
+          console.error('Initial source fetch failed:', error)
+          if (proxySourcesStatus) {
+            proxySourcesStatus.textContent = i18nGetMessage('proxySourcesFetchFailed')
+          }
+        } finally {
+          proxyTestingInProgress = false
+        }
+      }
     }
 
     for (const element of [
@@ -1259,9 +1513,13 @@ import {
 
   // Ready-made subscription presets: pick one and append it to the sources.
   if (proxySourcesPreset) {
-    proxySourcesPreset.innerHTML = RECOMMENDED_PROXY_SOURCES
-      .map((source) => `<option value="${source.url}">${source.name}</option>`)
-      .join('')
+    for (const source of RECOMMENDED_PROXY_SOURCES) {
+      const opt = document.createElement('option')
+
+      opt.value = source.url
+      opt.textContent = source.name
+      proxySourcesPreset.append(opt)
+    }
   }
 
   if (addProxySourcePreset && proxySourcesPreset && proxySourcesListTextarea) {
@@ -1318,6 +1576,9 @@ import {
     currentProxyProtocol.textContent = customProxyProtocol
   }
 
+  // Sort by latency before first render.
+  await ProxyManager.sortProxiesByLatency()
+
   if (useLocalProxy) {
     useLocalProxyRadioButton.checked = true
     await showLocalProxySettings()
@@ -1348,7 +1609,7 @@ import {
   }
 
   // Add a new proxy, or save changes to the one being edited.
-  saveCustomProxyButton.addEventListener('click', async (event) => {
+  saveCustomProxyButton.addEventListener('click', async () => {
     const rawValue = proxyServerInput.value.trim()
     const selectedProtocol = currentProxyProtocol.textContent.trim()
 

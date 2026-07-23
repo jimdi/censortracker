@@ -11,7 +11,10 @@ import browser from './browser-api'
  * @param {number} [options.timeout=8000] - Timeout in milliseconds.
  * @returns {Promise<Response>}
  */
-export const fetchWithTimeout = async (resource, { timeout = 8000, ...options } = {}) => {
+export const fetchWithTimeout = async (
+  resource,
+  { timeout = 8000, ...options } = {},
+) => {
   const controller = new AbortController()
   const id = setTimeout(() => controller.abort(), timeout)
 
@@ -252,7 +255,15 @@ export const extractDomainFromUrl = (url) => {
     const encodedUrl = searchParams.get('loadFor')
 
     if (encodedUrl) {
-      url = atob(encodedUrl)
+      try {
+        const decoded = atob(encodedUrl)
+
+        if (/^https?:\/\//i.test(decoded)) {
+          url = decoded
+        }
+      } catch (error) {
+        // Invalid base64, ignore
+      }
     }
   }
   return getDomain(url)
@@ -262,7 +273,7 @@ export const extractHostnameFromUrl = (url) => {
   return getHostname(url)
 }
 
-export const i18nGetMessage = (key, props = {}) => {
+export const i18nGetMessage = (key, _props = {}) => {
   return browser.i18n.getMessage(key)
 }
 
@@ -284,7 +295,7 @@ export const translateDocument = (doc, props = {}) => {
     }
 
     if (message) {
-      element.innerHTML = message
+      element.textContent = message
     }
   }
 }

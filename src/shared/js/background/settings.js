@@ -22,7 +22,7 @@ class Settings {
     }
   }
 
-  async showInstalledPage (tabId) {
+  async showInstalledPage (_tabId) {
     await browser.tabs.create({ url: 'installed.html' })
   }
 
@@ -81,12 +81,55 @@ class Settings {
 
     settings.domains = []
     settings.disseminators = []
+
+    if (Array.isArray(settings.customProxies)) {
+      settings.customProxies = settings.customProxies.map(
+        (proxy) => {
+          const rest = { ...proxy }
+
+          delete rest.credentials
+          return rest
+        },
+      )
+    }
+
     return settings
   }
 
   async importSettings (settings) {
+    if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
+      throw new Error('Invalid settings: must be a plain object')
+    }
+
+    const ALLOWED_KEYS = [
+      'enableExtension',
+      'useProxy',
+      'showNotifications',
+      'customProxiedDomains',
+      'ignoredHosts',
+      'customRegistryUrl',
+      'useCustomRegistry',
+      'currentRegionCode',
+      'proxyAllTraffic',
+      'useLocalProxy',
+      'activeProxyConfigName',
+      'proxySourcesEnabled',
+      'proxySourcesIntervalMinutes',
+      'proxySourcesUseProxy',
+      'proxySourcesAutoTest',
+      'proxySourcesList',
+    ]
+
+    const sanitized = {}
+
+    for (const key of ALLOWED_KEYS) {
+      if (Object.prototype.hasOwnProperty.call(settings, key)) {
+        sanitized[key] = settings[key]
+      }
+    }
+
     await browser.storage.local.clear()
-    await browser.storage.local.set(settings)
+    await browser.storage.local.set(sanitized)
   }
 }
 

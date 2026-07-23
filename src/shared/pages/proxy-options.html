@@ -37,7 +37,7 @@
           <label for="useProxyCheckbox" class="toggle-text" data-i18n-key="useProxy"></label>
           <input id="useProxyCheckbox" type="checkbox" class="toggle-button">
         </div>
-        <div class="main-page__about">
+        <div class="main-page__about description">
           <div class="use_proxy__text" data-i18n-key="optionsProxyDesc"></div>
         </div>
 
@@ -86,25 +86,28 @@
                 <button type="button" class="btn btn-dark cproxy-toolbar__btn" id="testAllProxiesButton">
                   <span class="btn__text" data-i18n-key="testProxiesButton"></span>
                 </button>
-                <button type="button" class="btn cproxy-toolbar__btn hidden" id="stopTestProxiesButton">
+                <button type="button" class="btn btn-dark cproxy-toolbar__btn hidden" id="stopTestProxiesButton">
                   <span class="btn__text" data-i18n-key="stopTestProxiesButton"></span>
                 </button>
-                <button type="button" class="btn cproxy-toolbar__btn" id="removeDeadProxiesButton">
+                <button type="button" class="btn btn-dark cproxy-toolbar__btn" id="removeDeadProxiesButton">
                   <span class="btn__text" data-i18n-key="removeDeadProxiesButton"></span>
                 </button>
-                <button type="button" class="btn cproxy-toolbar__btn" id="removeUntestedProxiesButton">
+                <button type="button" class="btn btn-dark cproxy-toolbar__btn" id="removeUntestedProxiesButton">
                   <span class="btn__text" data-i18n-key="removeUntestedProxiesButton"></span>
                 </button>
-                <button type="button" class="btn cproxy-toolbar__btn" id="removeUncheckedProxiesButton">
+                <button type="button" class="btn btn-dark cproxy-toolbar__btn" id="removeDuplicateProxiesButton">
+                  <span class="btn__text" data-i18n-key="removeDuplicateProxiesButton"></span>
+                </button>
+                <button type="button" class="btn btn-dark cproxy-toolbar__btn" id="removeUncheckedProxiesButton">
                   <span class="btn__text" data-i18n-key="removeUncheckedProxiesButton"></span>
                 </button>
-                <button type="button" class="btn cproxy-toolbar__btn" id="removeAllProxiesButton">
+                <button type="button" class="btn btn-dark cproxy-toolbar__btn" id="removeAllProxiesButton">
                   <span class="btn__text" data-i18n-key="removeAllProxiesButton"></span>
                 </button>
-                <button type="button" class="btn cproxy-toolbar__btn" id="pasteProxiesButton">
+                <button type="button" class="btn btn-dark cproxy-toolbar__btn" id="pasteProxiesButton">
                   <span class="btn__text" data-i18n-key="pasteProxiesButton"></span>
                 </button>
-                <button type="button" class="btn cproxy-toolbar__btn" id="copyAllProxiesButton">
+                <button type="button" class="btn btn-dark cproxy-toolbar__btn" id="copyAllProxiesButton">
                   <span class="btn__text" data-i18n-key="copyAllProxiesButton"></span>
                 </button>
                 <label class="cproxy-toolbar__field">
@@ -149,7 +152,7 @@
                     <span data-i18n-key="recommendedSourcesLabel"></span>
                     <select id="proxySourcesPreset" class="cproxy-select"></select>
                   </label>
-                  <button type="button" class="btn cproxy-toolbar__btn" id="addProxySourcePreset">
+                  <button type="button" class="btn btn-dark cproxy-toolbar__btn" id="addProxySourcePreset">
                     <span class="btn__text" data-i18n-key="addSourceButton"></span>
                   </button>
                 </div>
@@ -211,7 +214,7 @@
                   <button class="btn btn-dark" id="saveCustomProxyButton">
                     <span class="btn__text" data-i18n-key="addCustomProxyButton"></span>
                   </button>
-                  <button class="btn hidden" id="cancelEditProxyButton">
+                  <button class="btn btn-dark hidden" id="cancelEditProxyButton">
                     <span class="btn__text" data-i18n-key="cancel"></span>
                   </button>
                 </div>
@@ -238,7 +241,7 @@
               <div class="censortracker-not-found__wrapper hidden" id="localProxyClientNotFound">
                 <div><b data-i18n-key="localProxyNotFoundTitle"></b></div>
                 <div data-i18n-key="localProxyNotFoundDesc"></div>
-                <button class="btn btn__censortracker-not-found" id="downloadLocalProxyButton">
+                <button class="btn btn-dark btn__censortracker-not-found" id="downloadLocalProxyButton">
                   <span class="btn__text" data-i18n-key="downloadAppButton"></span>
                 </button>
               </div>
@@ -282,7 +285,7 @@
                     <button class="btn btn-dark" id="addLocalProxyConfigButton">
                       <span class="btn__text" data-i18n-key="addLocalProxyButton"></span>
                     </button>
-                    <button class="btn" id="goBackLocalProxy">
+                    <button class="btn btn-dark" id="goBackLocalProxy">
                       <span class="btn__text" data-i18n-key="cancel"></span>
                     </button>
                   </div>
@@ -300,7 +303,7 @@
           <div class="extension__text" data-i18n-key="controlledByOtherExtensionDesc"
                data-i18n-render-prop="extensionName">
           </div>
-          <a class="default-btn disable-other-extensions" data-i18n-key="disableAll"></a>
+          <a class="btn btn-dark disable-other-extensions" data-i18n-key="disableAll"></a>
         </div>
 
         <div id="controlledByOtherExtensions" class="main-page__extension" hidden>
@@ -310,7 +313,7 @@
             <ol id="extensionsWhichControlsProxy">
             </ol>
           </div>
-          <a class="default-btn disable-other-extensions" data-i18n-key="disableAll"></a>
+          <a class="btn btn-dark disable-other-extensions" data-i18n-key="disableAll"></a>
         </div>
       </div>
     </div>

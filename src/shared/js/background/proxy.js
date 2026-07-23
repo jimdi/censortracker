@@ -17,6 +17,8 @@ import {
 } from './utilities'
 
 class ProxyManager {
+  _proxyLock = Promise.resolve()
+
   async getProxyingRules () {
     const {
       proxyServerURI,
@@ -169,6 +171,13 @@ class ProxyManager {
   }
 
   async setProxy () {
+    const run = () => this._setProxyInner()
+
+    this._proxyLock = this._proxyLock.then(run, run)
+    return this._proxyLock
+  }
+
+  async _setProxyInner () {
     const domains = await registry.getDomains()
     const proxyAll = await this.getProxyAllTraffic()
 
@@ -402,6 +411,15 @@ class ProxyManager {
    */
   async addCustomProxy ({ name, protocol, uri, credentials = '' }) {
     const customProxies = await this.getCustomProxies()
+    const key = `${protocol}|${uri}`.toLowerCase()
+    const existing = customProxies.find(
+      (proxy) => `${proxy.protocol}|${proxy.uri}`.toLowerCase() === key,
+    )
+
+    if (existing) {
+      return existing
+    }
+
     const proxy = {
       id: this.generateProxyId(),
       name: (name && name.trim()) || uri,
@@ -795,9 +813,9 @@ class ProxyManager {
           // An unreadable body (opaque redirect etc.) is not a failed probe.
         }
       }
-      return { ok: true, latency, body }
+      return { ok: true, latency, body, status: response.status }
     } catch (error) {
-      return { ok: false, latency: null, body: null }
+      return { ok: false, latency: null, body: null, status: 0 }
     } finally {
       clearTimeout(timer)
       if (signal) {
@@ -1030,16 +1048,17 @@ class ProxyManager {
    * `PROXY_TEST_POOL.length` proxies are probed at once. The user's real
    * traffic keeps flowing through the active proxy for the whole run, and the
    * run can be aborted via `signal`. `onResult(id, result)` fires the moment
-   * each result is known so the UI can update live. Restores routing at the
-   * end.
+   * each result is known so the UI can update live. `onBatchStart(ids)` fires
+   * when a new batch begins probing, so the UI can mark those rows as
+   * "checking". Restores routing at the end.
    * @param {Array<{id: string, protocol: string, uri: string}>} proxies
-   * @param {{onResult?: Function, signal?: AbortSignal, timeout?: number,
+   * @param {{onResult?: Function, onBatchStart?: Function, signal?: AbortSignal, timeout?: number,
    *   concurrency?: number}} [options]
    * @returns {Promise<Object>} Map of proxy id -> result.
    */
   async testProxies (
     proxies,
-    { onResult, signal, timeout = 8000, concurrency } = {},
+    { onResult, onBatchStart, signal, timeout = 8000, concurrency } = {},
   ) {
     const results = {}
 
@@ -1078,6 +1097,10 @@ class ProxyManager {
           }
         })
 
+        if (typeof onBatchStart === 'function') {
+          onBatchStart(batch.filter(Boolean).map((proxy) => proxy.id))
+        }
+
         await this.applyCheckerPac(testRoutes)
         // Let the browser pick up the temporary PAC before probing.
         await new Promise((resolve) => setTimeout(resolve, 200))
@@ -1107,12 +1130,15 @@ class ProxyManager {
               ? await this.probeExitInfo(exitTarget, { timeout, signal })
               : { exitIp: null, exitCountry: '' }
 
+            const needsAuth = probe.ok && probe.status === 407
+
             const result = {
-              alive: probe.ok,
+              alive: probe.ok && !needsAuth,
               latency: probe.latency,
               ping,
               exitIp: exit.exitIp,
               exitCountry: exit.exitCountry,
+              needsAuth,
             }
 
             results[proxy.id] = result
@@ -1263,6 +1289,46 @@ class ProxyManager {
     return { removed: await this.removeCustomProxiesByIds(deadIds) }
   }
 
+  /**
+   * Removes duplicate proxies keeping only the first occurrence of each
+   * protocol+uri combination (case-insensitive). Chain entries pointing to
+   * removed duplicates are dropped and their statuses are cleared.
+   * @returns {Promise<{removed: number}>}
+   */
+  async removeDuplicateCustomProxies () {
+    const customProxies = await this.getCustomProxies()
+    const seen = new Set()
+    const kept = []
+    const duplicateIds = []
+
+    for (const proxy of customProxies) {
+      const key = `${proxy.protocol}|${proxy.uri}`.toLowerCase()
+
+      if (seen.has(key)) {
+        duplicateIds.push(proxy.id)
+      } else {
+        seen.add(key)
+        kept.push(proxy)
+      }
+    }
+
+    if (duplicateIds.length === 0) {
+      return { removed: 0 }
+    }
+
+    await browser.storage.local.set({ customProxies: kept })
+    await Promise.all(duplicateIds.map((id) => this.clearProxyStatus(id)))
+
+    const chain = await this.getProxyChain()
+    const filteredChain = chain.filter((id) => !duplicateIds.includes(id))
+
+    if (filteredChain.length !== chain.length) {
+      await this.setProxyChain(filteredChain)
+    }
+
+    return { removed: duplicateIds.length }
+  }
+
   // ---------------------------------------------------------------------------
   // Auto-fetching proxy lists from configured sources
   // ---------------------------------------------------------------------------
@@ -1306,7 +1372,10 @@ class ProxyManager {
       updates.proxySourcesEnabled = enabled
     }
     if (Number.isFinite(intervalMinutes)) {
-      updates.proxySourcesIntervalMinutes = Math.max(5, Math.round(intervalMinutes))
+      updates.proxySourcesIntervalMinutes = Math.max(
+        5,
+        Math.round(intervalMinutes),
+      )
     }
     if (typeof useProxy === 'boolean') {
       updates.proxySourcesUseProxy = useProxy
@@ -1362,6 +1431,8 @@ class ProxyManager {
       const directive = chain
         .map(({ protocol, uri }) => `${protocol} ${uri}`)
         .join('; ')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, '\\\'')
 
       await this.applyPacData(`function FindProxyForURL(url, h) {
         if (h === ${JSON.stringify(host)}) { return '${directive};'; }
@@ -1426,11 +1497,15 @@ class ProxyManager {
 
     const collected = []
 
-    for (const url of settings.sources) {
-      const text = await this.fetchSourceText(url, settings.useProxy)
+    const sourceResults = await Promise.allSettled(
+      settings.sources.map(
+        (url) => this.fetchSourceText(url, settings.useProxy),
+      ),
+    )
 
-      if (text) {
-        collected.push(...parseProxyList(text))
+    for (const result of sourceResults) {
+      if (result.status === 'fulfilled' && result.value) {
+        collected.push(...parseProxyList(result.value))
       }
     }
 

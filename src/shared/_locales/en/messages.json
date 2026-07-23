@@ -534,6 +534,9 @@
   "proxyColExitTitle": {
     "message": "Country websites see when you connect through this proxy (checked via an IP-echo service through the proxy)"
   },
+  "proxyColId": {
+    "message": "ID"
+  },
   "proxyColName": {
     "message": "Name"
   },
@@ -588,6 +591,9 @@
   "proxySourcesFetching": {
     "message": "Fetching…"
   },
+  "proxySourcesFetchFailed": {
+    "message": "Fetch failed"
+  },
   "proxySourcesHint": {
     "message": "Proxy list URLs, one per line (plain text or any pasteable format)."
   },
@@ -609,8 +615,14 @@
   "proxyStatusChecking": {
     "message": "checking…"
   },
+  "proxyStatusQueued": {
+    "message": "queued"
+  },
   "proxyStatusDead": {
     "message": "dead"
+  },
+  "proxyStatusNeedsAuth": {
+    "message": "auth required"
   },
   "proxyStatusUntested": {
     "message": "not tested"
@@ -809,5 +821,8 @@
   },
   "youCanCloseThisWindow": {
     "message": "You can close this window"
+  },
+  "removeDuplicateProxiesButton": {
+    "message": "Remove duplicates"
   }
 }

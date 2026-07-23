@@ -9,6 +9,30 @@ const HTMLWebpackPlugin = require('html-webpack-plugin')
 const MergeJsonWebpackPlugin = require('merge-jsons-webpack-plugin')
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
+const ESLintPlugin = require('eslint-webpack-plugin');
+const { RawSource } = require('webpack-sources');
+
+/** Strip new Function('return this')() from webpack's global runtime to comply with MV3 CSP */
+class SafeGlobalPlugin {
+  apply(compiler) {
+    compiler.hooks.thisCompilation.tap('SafeGlobalPlugin', (compilation) => {
+      compilation.hooks.processAssets.tap({
+        name: 'SafeGlobalPlugin',
+        stage: webpack.Compilation.PROCESS_ASSETS_STAGE_OPTIMIZE,
+      }, (assets) => {
+        for (const [name, asset] of Object.entries(assets)) {
+          if (!name.endsWith('.js')) continue
+          const source = asset.source()
+          if (!source.includes("new Function('return this')")) continue
+          compilation.updateAsset(
+            name,
+            new RawSource(source.replace(/new Function\('return this'\)\(\)/g, 'self'))
+          )
+        }
+      })
+    })
+  }
+}
 
 const extensionName = 'Censor Tracker'
 
@@ -38,6 +62,7 @@ const webWorkerConfig = {
     path: resolve(`dist/chrome/${OUTPUT_SUB_DIR}`),
     filename: '[name].js',
     publicPath: PRODUCTION ? '' : '/',
+    globalObject: 'globalThis',
   },
 
   resolve: {
@@ -48,6 +73,10 @@ const webWorkerConfig = {
     },
   },
 
+  performance: {
+    hints: false,
+  },
+
   optimization: {
     minimize: true,
     minimizer: [],
@@ -55,12 +84,6 @@ const webWorkerConfig = {
   },
   module: {
     rules: [
-      {
-        test: /\.js$/,
-        use: 'eslint-loader',
-        exclude: /node_modules/,
-        enforce: 'pre',
-      },
       {
         test: /\.js$/,
         use: 'babel-loader',
@@ -77,6 +100,13 @@ const webWorkerConfig = {
     ],
   },
 
+  plugins: [
+    new ESLintPlugin({
+      files: 'src/shared/js/background/**/*.js',
+      exclude: ['node_modules'],
+    }),
+    new SafeGlobalPlugin(),
+  ],
 }
 
 const webConfig = {
@@ -98,6 +128,7 @@ const webConfig = {
     path: resolve(`dist/${BROWSER}/${OUTPUT_SUB_DIR}`),
     filename: '[name].js',
     publicPath: PRODUCTION ? '' : '/',
+    globalObject: 'globalThis',
   },
   resolve: {
     extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
@@ -106,6 +137,11 @@ const webConfig = {
       'Background': resolve('src/shared/js/background'),
     },
   },
+
+  performance: {
+    hints: false,
+  },
+
   module: {
     rules: [
       { test: /\.css$/, use: ['style-loader', 'css-loader']},
@@ -119,12 +155,6 @@ const webConfig = {
             },
           },
         ],
-      },
-      {
-        test: /\.js$/,
-        use: 'eslint-loader',
-        exclude: /node_modules/,
-        enforce: 'pre',
       },
       {
         test: /\.(js|jsx)$/,
@@ -163,7 +193,14 @@ const webConfig = {
   },
 
   plugins: [
-    new webpack.HotModuleReplacementPlugin(),
+    new ESLintPlugin({
+      files: 'src/**/*.js',
+      exclude: ['node_modules'],
+    }),
+    new SafeGlobalPlugin(),
+    ...(PRODUCTION ? [] : [
+      new webpack.HotModuleReplacementPlugin(),
+    ]),
     new CopyWebpackPlugin({
       patterns: [
         {
@@ -305,11 +342,9 @@ if (isChromium) {
 }
 
 if (PRODUCTION) {
-  // See https://git.io/JmiaL
-  // See https://webpack.js.org/configuration/devtool/#production
-  webConfig.devtool = 'nosources-source-map'
-
-  // See https://webpack.js.org/configuration/optimization/#optimizationminimize
+  // Production: disable source maps entirely for security.
+  webConfig.devtool = false
+  webWorkerConfig.devtool = false
   webConfig.optimization.minimize = true
   webConfig.optimization.minimizer.push(
     new TerserPlugin({
@@ -320,7 +355,6 @@ if (PRODUCTION) {
       },
     }),
   )
-  webWorkerConfig.devtool = 'nosources-source-map'
   webWorkerConfig.optimization.minimize = true
   webWorkerConfig.optimization.minimizer = [
     new TerserPlugin({

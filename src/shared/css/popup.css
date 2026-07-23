@@ -2,7 +2,8 @@
 
 body {
     width: 315px;
-    display: block;
+    display: flex;
+    flex-direction: column;
     margin: 0;
     font-family: 'IBM Plex Sans', Arial, sans-serif;
     color: #3b332b;
@@ -14,7 +15,6 @@ body {
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     text-shadow: rgba(0, 0, 0, 20%) 0 0 1px;
-    overflow-y: hidden;
     overflow-x: hidden;
 }
 
@@ -22,7 +22,14 @@ a {
     text-decoration: none;
 }
 
+.container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
 .main-page {
+    flex: 1;
     margin: 20px;
 }
 
@@ -306,6 +313,7 @@ a {
 
 .footer,
 .footer-btn {
+    flex-shrink: 0;
     background: #f4f4f4;
     font-size: 13px;
     line-height: 20px;
@@ -527,13 +535,15 @@ div#grantPrivateBrowsingPermissionsButton {
 }
 
 .main-page-setting > .proxy_info {
-    color: #8A8580;
+    color: #625c55;
+    font-size: 13px;
+    margin-top: 6px;
 }
 
 .site-actions-group {
     display: inline-block;
     overflow: hidden;
-    margin: 20px 0 10px
+    margin: 12px 0 8px
 }
 
 .site-actions-group-item {
@@ -808,37 +818,26 @@ div#grantPrivateBrowsingPermissionsButton {
 .related-domains__title {
     font-weight: 600;
     margin-bottom: 4px;
+    color: #625c55;
 }
 
 .related-domains__desc {
-    font-size: 12px;
-    opacity: .75;
-    margin-bottom: 8px;
-}
-
-.related-domains__find-btn,
-.related-domains__apply-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 6px 12px;
     font-size: 13px;
-    border: 1px solid #d8d2cb;
-    border-radius: 6px;
-    background: #f4f1f1;
-    cursor: pointer;
-}
-
-.related-domains__find-btn[disabled],
-.related-domains__apply-btn[disabled] {
-    opacity: .6;
-    cursor: default;
+    opacity: .9;
+    margin-bottom: 8px;
+    color: #625c55;
 }
 
 .related-domains__status {
-    font-size: 12px;
-    opacity: .75;
+    font-size: 13px;
+    opacity: .9;
+    color: #625c55;
     margin: 8px 0;
+}
+
+.related-domains .btn-dark {
+    padding: 6px 12px;
+    font-size: 13px;
 }
 
 .related-domains__list {
@@ -883,10 +882,17 @@ div#grantPrivateBrowsingPermissionsButton {
         color: #f4f1f1;
     }
 
-    .related-domains__find-btn,
-    .related-domains__apply-btn {
-        background: #242728;
+    .related-domains__title,
+    .related-domains__desc {
         color: #f4f1f1;
-        border-color: #3a3f45;
+    }
+
+    .related-domains .btn-dark {
+        background: #484C51;
+        color: #cbccc6;
+    }
+
+    .related-domains .btn-dark:hover {
+        background: #61666B;
     }
 }

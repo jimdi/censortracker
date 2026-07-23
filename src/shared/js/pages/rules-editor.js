@@ -7,15 +7,22 @@ import 'codemirror/theme/ayu-mirage.css'
 
 import browser from 'Background/browser-api'
 import Ignore from 'Background/ignore'
-import { i18nGetMessage, isValidURL, removeDuplicates } from 'Background/utilities'
+import {
+  fetchWithTimeout,
+  i18nGetMessage,
+  isValidURL,
+  removeDuplicates,
+} from 'Background/utilities'
 import CodeMirror from 'codemirror'
 
-(async () => {
+;(() => {
   const search = document.getElementById('search')
   const textarea = document.getElementById('textarea')
   const saveChangesButton = document.getElementById('saveChanges')
   const copyListButton = document.getElementById('copyList')
-  const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)')
+  const prefersDarkScheme = window.matchMedia(
+    '(prefers-color-scheme: dark)',
+  )
 
   const editor = CodeMirror.fromTextArea(
     textarea, {
@@ -26,7 +33,9 @@ import CodeMirror from 'codemirror'
       styleActiveLine: true,
       styleActiveSelected: true,
       disableSpellcheck: true,
-      theme: prefersDarkScheme.matches ? 'ayu-mirage' : 'default',
+      theme: prefersDarkScheme.matches
+        ? 'ayu-mirage'
+        : 'default',
     },
   )
 
@@ -93,7 +102,7 @@ import CodeMirror from 'codemirror'
   // Copies the whole domain list (as shown in the editor, one per line) to
   // the clipboard, so it can be shared or backed up.
   if (copyListButton) {
-    copyListButton.addEventListener('click', async (event) => {
+    copyListButton.addEventListener('click', async () => {
       const content = editor.getValue().trim()
 
       try {
@@ -149,11 +158,11 @@ import CodeMirror from 'codemirror'
       return true
     }
 
-    loadFromURLButton.addEventListener('click', async (event) => {
+    loadFromURLButton.addEventListener('click', async () => {
       const sourceURL = document.getElementById('sourceURL').value
 
       if (isValidURL(sourceURL)) {
-        fetch(sourceURL)
+        fetchWithTimeout(sourceURL, { timeout: 15000 })
           .then((response) => response.text())
           .then(async (text) => {
             const domains = readlines(text)
@@ -213,12 +222,12 @@ import CodeMirror from 'codemirror'
     })
 
     // Show the popup when the button is clicked.
-    loadDomainsButton.addEventListener('click', async (event) => {
+    loadDomainsButton.addEventListener('click', async () => {
       popup.classList.remove('hidden')
     })
 
     // Hide the popup when the button is clicked.
-    closePopupButton.addEventListener('click', async (event) => {
+    closePopupButton.addEventListener('click', async () => {
       popup.classList.add('hidden')
       urlSourceError.classList.add('hidden')
       textFileReadError.classList.add('hidden')

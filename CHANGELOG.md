@@ -1,3 +1,35 @@
+# 20.7.11
+
+- Fixed CSP `unsafe-eval` violation that prevented the extension from loading:
+  webpack's runtime injects a `new Function("return this")()` polyfill for the
+  global object, which conflicts with the extension's `script-src 'self'`
+  policy.  A `SafeGlobalPlugin` in `webpack.config.js` now rewrites that call
+  to `self` during the asset-processing stage, and `'unsafe-eval'` was added
+  to the Chrome manifest CSP as a fallback for any third-party bundles
+- The alternative source toggle now truly isolates the default registry: when
+  `useCustomRegistry` is on the `synchronize()` path passes an empty
+  `registryUrl` to `fetchRegistry()`, so the built-in endpoint is never
+  touched
+- Proxy deduplication on the single-add form: `addCustomProxy()` checks
+  `protocol|uri` (case-insensitive) against the stored list before inserting,
+  and returns the existing entry when a match is found instead of creating a
+  duplicate
+- New "Remove duplicates" bulk button in the proxy toolbar: calls
+  `removeDuplicateCustomProxies()`, which keeps only the first occurrence of
+  each `protocol|uri` pair, cleans up the chain and statuses in one pass
+- Proxy list datagrid: select-all checkbox in the header row — checking it
+  adds every visible proxy to the chain, unchecking removes them all; the
+  checkbox shows an indeterminate state when only some proxies are selected
+- New sortable "ID" column in the proxy datagrid header — sorts proxies by
+  their position in the chain (unchained proxies sort to the end)
+- The order-number badge now lives in its own grid column (`cproxy-order-cell`)
+  instead of being inlined next to the checkbox, eliminating the overlap with
+  the proxy name
+- Added `proxyColId` i18n key (en/ru/uk)
+- Webpack: `SafeGlobalPlugin` added to both `webConfig` and `webWorkerConfig`
+  plugin arrays, replacing `new Function` calls in all output bundles
+
+
 # 20.7.1
 
 - Added a "Proxy ALL traffic" toggle in the proxy settings: route every

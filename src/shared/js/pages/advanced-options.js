@@ -40,33 +40,37 @@ import Settings from 'Background/settings'
   copyDebugInfoBtn.addEventListener('click', (event) => {
     debugInfoJSON.select()
     document.execCommand('copy')
-    event.target.innerHTML = '&check;'
+    event.target.textContent = '\u2713'
 
     setTimeout(() => {
       togglePopup('popupDebugInformation')
     }, 500)
   })
-  closeDebugInfoBtn.addEventListener('click', (event) => {
+  closeDebugInfoBtn.addEventListener('click', () => {
     togglePopup('popupDebugInformation')
   })
-  resetSettingsToDefaultBtn.addEventListener('click', (event) => {
+  resetSettingsToDefaultBtn.addEventListener('click', () => {
     togglePopup('popupConfirmReset')
   })
-  closePopupResetBtn.addEventListener('click', (event) => {
+  closePopupResetBtn.addEventListener('click', () => {
     togglePopup('popupConfirmReset')
   })
-  cancelPopupResetBtn.addEventListener('click', (event) => {
+  cancelPopupResetBtn.addEventListener('click', () => {
     togglePopup('popupConfirmReset')
   })
-  closePopupConfirmBtn.addEventListener('click', (event) => {
+  closePopupConfirmBtn.addEventListener('click', () => {
     togglePopup('popupCompletedSuccessfully')
   })
-  completedConfirmBtn.addEventListener('click', (event) => {
+  completedConfirmBtn.addEventListener('click', () => {
     togglePopup('popupCompletedSuccessfully')
   })
 
   // --- Custom (alternative) registry source ----------------------------------
-  if (useCustomRegistryCheckbox && customRegistryUrlInput && saveCustomRegistryButton) {
+  if (
+    useCustomRegistryCheckbox &&
+    customRegistryUrlInput &&
+    saveCustomRegistryButton
+  ) {
     browser.storage.local.get({
       useCustomRegistry: false,
       customRegistryUrl: '',
@@ -120,7 +124,7 @@ import Settings from 'Background/settings'
     })
   }
 
-  updateLocalRegistryBtn.addEventListener('click', async (event) => {
+  updateLocalRegistryBtn.addEventListener('click', async () => {
     togglePopup('popupCompletedSuccessfully')
     ProxyManager.isEnabled().then(async (proxyingEnabled) => {
       await server.synchronize()
@@ -143,7 +147,7 @@ import Settings from 'Background/settings'
     }
   })
 
-  showDebugInfoBtn.addEventListener('click', async (event) => {
+  showDebugInfoBtn.addEventListener('click', async () => {
     const thisExtension = await browser.management.getSelf()
     const extensionsInfo = await browser.management.getAll()
     const { version: currentVersion } = browser.runtime.getManifest()
@@ -186,7 +190,7 @@ import Settings from 'Background/settings'
     togglePopup('popupDebugInformation')
   })
 
-  confirmResetBtn.addEventListener('click', async (event) => {
+  confirmResetBtn.addEventListener('click', async () => {
     togglePopup('popupConfirmReset')
     togglePopup('popupCompletedSuccessfully')
     await server.synchronize()
@@ -198,7 +202,7 @@ import Settings from 'Background/settings'
     console.warn('Censor Tracker has been reset to default settings.')
   })
 
-  exportSettingsBtn.addEventListener('click', (event) => {
+  exportSettingsBtn.addEventListener('click', () => {
     Settings.exportSettings().then((settings) => {
       const data = JSON.stringify(settings, null, 2)
       const blob = new Blob([data], { type: 'application/json' })
@@ -223,17 +227,17 @@ import Settings from 'Background/settings'
     const fileReader = new FileReader()
 
     fileReader.addEventListener('load', async (e) => {
-      const contents = e.target.result
-      const data = JSON.parse(contents)
+      try {
+        const contents = e.target.result
+        const data = JSON.parse(contents)
 
-      await Settings.importSettings(data)
+        await Settings.importSettings(data)
 
-      // Render new state
-      window.location.reload()
-
-      await server.synchronize({ syncRegistry: true })
-      await ProxyManager.setProxy()
-      await ProxyManager.ping()
+        // Render new state
+        window.location.reload()
+      } catch (error) {
+        console.error(`[Settings] Import failed: ${error}`)
+      }
     })
     fileReader.readAsText(file)
   })

@@ -1,12 +1,38 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
 
+:root {
+  --text-primary: #3b332b;
+  --text-secondary: #6d675f;
+  --text-muted: #9a948c;
+  --text-on-dark: #F4F1F1;
+  --bg-primary: #fff;
+  --bg-secondary: #f4f1ec;
+  --bg-card: #fff;
+  --border-color: #c4c2bf;
+  --border-light: #e0ddd8;
+  --input-bg: #fff;
+  --input-height: 37px;
+  --btn-primary-bg: #3b332b;
+  --btn-primary-text: #fff;
+  --btn-radius: 4px;
+  --card-radius: 10px;
+  --focus-color: #5173d3;
+  --success-color: #6c9e2c;
+  --error-color: #c0392b;
+  --dark-bg: #181A1B;
+  --dark-card: #242728;
+  --dark-text: #e0ddd8;
+  --dark-text-secondary: #9a9590;
+  --dark-border: #2e3031;
+}
+
 body {
   display: block;
   width: 100%;
   margin: 0;
   font-family: 'IBM Plex Sans', Arial, sans-serif;
-  color: #3b332b;
-  font-weight: 700;
+  color: var(--text-primary);
+  font-weight: 500;
   font-size: 20px;
   line-height: 22px;
   min-width: 320px;
@@ -14,7 +40,7 @@ body {
 
 a {
   text-decoration: none;
-  color: #3b332b;
+  color: var(--text-primary);
 }
 
 .main-page__search {
@@ -29,9 +55,9 @@ a {
 .options-page-card {
   padding: 20px 30px;
   width: 100%;
-  background: #FFF;
+  background: var(--bg-card);
   border-bottom: 1px solid #f1f1f1;
-  border-radius: 10px;
+  border-radius: var(--card-radius);
   filter: drop-shadow(0px 2px 12px rgba(15, 13, 11, 0.055)) drop-shadow(0px 1px 7px rgba(15, 13, 11, 0.0655718)) drop-shadow(0px 1px 4px rgba(15, 13, 11, 0.079074));
   margin-bottom: 20px;
 
@@ -44,8 +70,8 @@ a {
 .options-page-card .block__title {
   font-size: 16px;
   line-height: 20px;
-  color: #3b332b;
-  opacity: 0.5;
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 .options-page-card .options-hr {
@@ -86,6 +112,7 @@ a {
   line-height: 35px;
   font-weight: 600;
   margin-bottom: 50px;
+  color: var(--text-primary);
 }
 
 .main-container__after-install .main-page {
@@ -178,6 +205,7 @@ a {
   font-size: 16px;
   line-height: 20px;
   font-weight: 500;
+  color: var(--text-primary);
 }
 
 .title {
@@ -191,7 +219,7 @@ a {
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #6d675f;
+  color: var(--text-secondary);
   margin-right: 70px;
 }
 
@@ -334,16 +362,17 @@ a {
 }
 
 .default-btn {
-  background-color: #3b332b;
+  background-color: var(--btn-primary-bg);
   font-size: 14px;
   line-height: 15px;
-  color: #fff;
-  padding: 9px 20px;
+  color: var(--btn-primary-text);
+  padding: 10px 20px;
   display: inline-block;
-  font-weight: 400;
+  font-weight: 500;
   box-shadow: 0 2.01027px 11.8382px rgba(15, 13, 11, 0.055), 0 1.12694px 6.63642px rgba(15, 13, 11, 0.0655718), 0 0.598509px 3.52455px rgba(15, 13, 11, 0.079074);
-  border-radius: 4px;
+  border-radius: var(--btn-radius);
   margin-right: 15px;
+  border: none;
 }
 
 .default-btn:hover {
@@ -387,7 +416,7 @@ a {
 }
 
 .main-page__link svg {
-  fill: #3b332b;
+  fill: var(--text-primary);
 }
 
 .main-page__link:hover svg {
@@ -396,14 +425,14 @@ a {
 
 /* Proxy Options Page */
 .input-proxy {
-  border: 1px solid #c4c2bf;
+  border: 1px solid var(--border-color);
   box-sizing: border-box;
-  border-radius: 4px;
+  border-radius: var(--btn-radius);
   padding: 0 11px;
-  color: #6d675f;
+  color: var(--text-primary);
   width: 100%;
   margin: 0;
-  height: 37px;
+  height: var(--input-height);
 }
 
 #saveCustomProxyButton {
@@ -503,23 +532,28 @@ a {
   align-items: baseline;
   gap: 6px;
   margin: 6px 0 14px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .current-proxy-address__label {
-  color: #6d675f;
+  color: #3b332b;
+  font-weight: 600;
+  font-size: 15px;
 }
 
 .current-proxy-address__value {
   font-family: 'IBM Plex Mono', monospace;
-  color: #3b332b;
+  color: #6d675f;
   word-break: break-all;
+  font-size: 14px;
 }
 
 /* Unified custom proxy datagrid (built-in + user): one column per
    parameter — chain, name, address, country, exit country, ping, site-open
    latency, status, actions. Scrolls horizontally when it doesn't fit. */
 #proxyListBody {
+  max-height: 500px;
+  overflow-y: auto;
   overflow-x: auto;
 }
 
@@ -544,7 +578,7 @@ a {
   /* Every track is either fixed or fr — identical resolution in every row
      (a max-content track would size per-row and skew the columns). */
   grid-template-columns:
-    40px minmax(120px, 1.3fr) minmax(150px, 1.6fr)
+    36px 40px minmax(120px, 1.3fr) minmax(150px, 1.6fr)
     56px 56px 64px 64px 96px 132px;
   align-items: center;
   gap: 8px;
@@ -563,6 +597,9 @@ a {
 }
 
 .cproxy-grid__header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   font-size: 12px;
   font-weight: 600;
   color: #6d675f;
@@ -628,6 +665,28 @@ a {
   line-height: 1;
 }
 
+/* Cell that holds the order number badge — centred inside the ID column. */
+.cproxy-order-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+/* Select-all checkbox cell in the grid header. */
+.cproxy-select-all-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.cproxy-select-all-cell input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
 /* Per-proxy liveness / latency status. */
 .cproxy-status-cell {
   flex: 0 0 auto;
@@ -649,6 +708,11 @@ a {
   color: #6d675f;
 }
 
+.cproxy-status--queued {
+  color: #9a948c;
+  font-style: italic;
+}
+
 .cproxy-status--alive {
   color: #2e7d32;
 }
@@ -657,8 +721,13 @@ a {
   color: #c0392b;
 }
 
+.cproxy-status--needsauth {
+  color: #e65100;
+}
+
 .cproxy-status--alive::before,
-.cproxy-status--dead::before {
+.cproxy-status--dead::before,
+.cproxy-status--needsauth::before {
   content: "\25cf\00a0";
 }
 
@@ -953,7 +1022,7 @@ a {
   width: 100%;
   height: 30px;
   padding: 0 11px;
-  color: #6d675f;
+  color: var(--text-primary);
 }
 
 .input-search:focus,
@@ -1027,7 +1096,7 @@ a {
 
 .btn {
   display: inline-block;
-  border-radius: 4px;
+  border-radius: var(--btn-radius);
   text-align: center;
   vertical-align: middle;
   -webkit-user-select: none;
@@ -1036,10 +1105,12 @@ a {
   user-select: none;
   background-color: transparent;
   padding: 10px 20px;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 15px;
+  font-weight: 500;
   color: inherit;
   font-family: inherit;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .btn:hover {
@@ -1047,8 +1118,8 @@ a {
 }
 
 .btn-dark {
-  background: #3b332b;
-  color: #fff;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
   margin-right: 30px;
   border: 1px solid transparent;
   box-shadow: 0 0.598509px 3.52455px rgba(15, 13, 11, 0.079074), 0 1.12694px 6.63642px rgba(15, 13, 11, 0.0655718), 0 2.01027px 11.8382px rgba(15, 13, 11, 0.055);
@@ -1076,7 +1147,7 @@ a {
 }
 
 .btn-light {
-  border: 1px solid #3b332b;
+  border: 1px solid var(--text-primary);
 }
 
 .btn-light:hover {
@@ -1721,16 +1792,17 @@ kbd {
 }
 
 .update-btn {
-  background-color: #2B3B2D;
+  background-color: var(--success-color);
   font-size: 14px;
   line-height: 15px;
   color: #fff;
-  padding: 9px 20px;
+  padding: 10px 20px;
   display: inline-block;
-  font-weight: 400;
+  font-weight: 500;
   box-shadow: 0 2.01027px 11.8382px rgba(15, 13, 11, 0.055), 0 1.12694px 6.63642px rgba(15, 13, 11, 0.0655718), 0 0.598509px 3.52455px rgba(15, 13, 11, 0.079074);
-  border-radius: 4px;
+  border-radius: var(--btn-radius);
   margin-right: 15px;
+  border: none;
 }
 
 .update-btn:hover {
@@ -1829,7 +1901,6 @@ kbd {
 
   .options-page-card .block__title {
     color: #F4F1F1;
-    opacity: 0.5;
   }
 
   a {
@@ -2036,6 +2107,8 @@ kbd {
 
   .input-proxy {
     border: 1px solid #292828;
+    color: #F4F1F1;
+    background: #242728;
   }
 
   .input-proxy:active {
@@ -2060,12 +2133,152 @@ kbd {
     border-color: #292828;
   }
 
+  .input-search {
+    background: #242728;
+    color: #F4F1F1;
+    border-color: #292828;
+  }
+
   .cproxy-sources__status {
     color: #cbccc6;
   }
 
   .cproxy-sources {
     border-top-color: #292828;
+  }
+
+  /* ── proxy datagrid dark theme ── */
+
+  .current-proxy-address__label {
+    color: #e0ddd8;
+  }
+
+  .current-proxy-address__value {
+    color: #9a9590;
+  }
+
+  .custom-proxy-list {
+    border-color: #2e3031;
+    background: #1e2021;
+  }
+
+  .cproxy-row {
+    border-bottom-color: #2e3031;
+    background: #1e2021;
+  }
+
+  .cproxy-row:hover {
+    background: #242728;
+  }
+
+  .cproxy-grid__header {
+    background: #242728;
+    color: #9a9590;
+  }
+
+  .cproxy-row__name {
+    color: #e0ddd8;
+  }
+
+  .cproxy-row__addr {
+    color: #9a9590;
+  }
+
+  .cproxy-country-cell,
+  .cproxy-exit-cell,
+  .cproxy-ping-cell,
+  .cproxy-site-cell {
+    color: #e0ddd8;
+  }
+
+  .cproxy-cell--empty {
+    color: #5a5753;
+  }
+
+  .cproxy-badge {
+    background: #2e3031;
+    color: #9a9590;
+  }
+
+  .cproxy-country {
+    color: #9a9590;
+  }
+
+  .cproxy-status--unknown {
+    color: #7a7672;
+  }
+
+  .cproxy-status--checking {
+    color: #9a9590;
+  }
+
+  .cproxy-status--queued {
+    color: #7a7672;
+  }
+
+  .cproxy-status--alive {
+    color: #4caf50;
+  }
+
+  .cproxy-status--dead {
+    color: #ef5350;
+  }
+
+  .cproxy-status--needsauth {
+    color: #ff9800;
+  }
+
+  .cproxy-icon-btn {
+    color: #9a9590;
+  }
+
+  .cproxy-icon-btn:hover {
+    background: #2e3031;
+    color: #e0ddd8;
+  }
+
+  .cproxy-order {
+    background: #6c9e2c;
+  }
+
+  .cproxy-row--active {
+    box-shadow: inset 3px 0 0 #6c9e2c;
+  }
+
+  .cproxy-toolbar__check span {
+    color: #cbccc6;
+  }
+
+  .cproxy-progress__bar {
+    background: #2e3031;
+  }
+
+  .cproxy-progress__fill {
+    background: #5173d3;
+  }
+
+  .cproxy-progress__text {
+    color: #9a9590;
+  }
+
+  .cproxy-add-form,
+  .cproxy-import-form {
+    border-color: #2e3031;
+    background: #1e2021;
+  }
+
+  .cproxy-input {
+    background: #242728;
+    color: #e0ddd8;
+    border-color: #2e3031;
+  }
+
+  .cproxy-input:focus {
+    border-color: #5173d3;
+  }
+
+  .cproxy-input::placeholder {
+    color: #7a7672;
   }
 
   .update_available {

@@ -534,6 +534,9 @@
   "proxyColExitTitle": {
     "message": "Країна, яку бачать сайти при заході через цей проксі (перевіряється IP-echo сервісом через проксі)"
   },
+  "proxyColId": {
+    "message": "ID"
+  },
   "proxyColName": {
     "message": "Назва"
   },
@@ -588,6 +591,9 @@
   "proxySourcesFetching": {
     "message": "Завантаження…"
   },
+  "proxySourcesFetchFailed": {
+    "message": "Помилка завантаження"
+  },
   "proxySourcesHint": {
     "message": "URL списків проксі, по одному в рядку (текст або будь-який формат для вставки)."
   },
@@ -609,8 +615,14 @@
   "proxyStatusChecking": {
     "message": "перевірка…"
   },
+  "proxyStatusQueued": {
+    "message": "в черзі"
+  },
   "proxyStatusDead": {
     "message": "недоступна"
+  },
+  "proxyStatusNeedsAuth": {
+    "message": "потрібна авторизація"
   },
   "proxyStatusUntested": {
     "message": "не перевірено"
@@ -809,5 +821,8 @@
   },
   "youCanCloseThisWindow": {
     "message": "Можна закрити це вікно"
+  },
+  "removeDuplicateProxiesButton": {
+    "message": "Видалити дублікати"
   }
 }

@@ -68,7 +68,7 @@ import { extractHostnameFromUrl, i18nGetMessage, isI2PUrl, isOnionUrl, isValidUR
     }
   })
 
-  openOptionsPage.addEventListener('click', async (target) => {
+  openOptionsPage.addEventListener('click', async () => {
     await browser.runtime.openOptionsPage()
   })
 
@@ -146,15 +146,24 @@ import { extractHostnameFromUrl, i18nGetMessage, isI2PUrl, isOnionUrl, isValidUR
       const popupTotalBlocked = i18nGetMessage('popupTotalBlocked')
 
       if (customProxyServerURI) {
-        proxyingDetailsText.innerHTML = `<code><b>${popupServerMsg}:</b> — </code>`
+        proxyingDetailsText.textContent = `${popupServerMsg}: —`
       } else {
-        proxyingDetailsText.innerHTML = `<code><b>${popupServerMsg}:</b> ${proxyServerId}</code>`
+        proxyingDetailsText.textContent = `${popupServerMsg}: ${proxyServerId}`
       }
 
-      proxyingDetailsText.innerHTML += `
-        <code><b>${popupYourRegion}:</b> ${regionName}</code>
-        <code><b>${popupTotalBlocked}:</b> ${domains.length}</code>
-      `
+      const regionLine = document.createElement('code')
+
+      regionLine.textContent = `${popupYourRegion}: ${regionName}`
+      const blockedLine = document.createElement('code')
+
+      blockedLine.textContent = `${popupTotalBlocked}: ${domains.length}`
+
+      proxyingDetailsText.append(
+        document.createElement('br'),
+        regionLine,
+        document.createElement('br'),
+        blockedLine,
+      )
     } else {
       proxyingInfo.hidden = true
     }
@@ -197,7 +206,7 @@ import { extractHostnameFromUrl, i18nGetMessage, isI2PUrl, isOnionUrl, isValidUR
     }
 
     const renderDomains = async (domains) => {
-      relatedDomainsList.innerHTML = ''
+      relatedDomainsList.textContent = ''
 
       if (domains.length === 0) {
         renderStatus('relatedDomainsEmpty')
@@ -374,7 +383,7 @@ import { extractHostnameFromUrl, i18nGetMessage, isI2PUrl, isOnionUrl, isValidUR
               )
               Ignore.remove(currentUrl).then((removed) => {
                 if (removed) {
-                  Registry.add(currentUrl).then((added) => {
+                  Registry.add(currentUrl).then(() => {
                     console.warn('Proxying strategy was changed to: "always"')
                   })
                 }

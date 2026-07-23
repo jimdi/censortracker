@@ -69,8 +69,7 @@ web_modules/
 .yarn-integrity
 
 # dotenv environment variables file
-.env
-.env.test
+.env*
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -117,7 +116,19 @@ out
 *.zip
 
 key.pem
+*.pem
 dist.crx
 dist/
 releases/
 mock/
+
+# AI tooling
+.opencode/
+
+# Chrome Web Store credentials & cached tokens
+client_secret_*.json
+.cws-config.json
+
+# Extension packages
+*.crx
+*.xpi
