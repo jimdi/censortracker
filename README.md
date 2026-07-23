@@ -44,6 +44,10 @@
 
 ### Chrome / Chromium (Chrome, Edge, Opera, Brave, Yandex, Vivaldi)
 
+**[Установить из Chrome Web Store](https://chromewebstore.google.com/detail/censor-tracker-%E2%80%93-proxy-fo/nfhhkclbgpamfcblcogfgcahmkmkbahm)**
+
+Или вручную:
+
 1. Скачайте из последнего релиза файл `.zip` и распакуйте его.
 2. Откройте `chrome://extensions/` и включите **Режим разработчика**.
 3. Нажмите **«Загрузить распакованное расширение»** и выберите распакованную
